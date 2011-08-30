@@ -55,12 +55,14 @@ function lsdb(config) {
         this.show_tables = function() {
             var tbs = [], dbname = this.dbname, utils = this.utils, ls = this.ls;
             var cb = function(key) {
-                var tmp = key.split('_'), dbn = tmp[0], tbname = tmp[1];
-                if (dbn == dbname) {
-                    if (tbname)
-                        tbs.push(tbname);
-                    else
-                        tbs.push('undefined');
+                if (key) {
+                    var tmp = key.split('_'), dbn = tmp[0], tbname = tmp[1];
+                    if (dbn == dbname) {
+                        if (tbname)
+                            tbs.push(tbname);
+                        else
+                            tbs.push('undefined');
+                    }
                 }
             }
             utils.browse_ls(ls, cb);
@@ -68,37 +70,36 @@ function lsdb(config) {
         }
 
         /**
-         * Inserts record to the table <br/>
-         * Example: db.insert('users', { name: 'John', surname: 'Doe' });
+         * Inserts one or several records into the table <br/>
+         * Example: db.insert('users', { name: 'John', surname: 'Doe' });<br/>
+         * db.insert('users', [ { name: 'Engerberd', surname: 'Humperdink' }, { name: 'Glass', surname: 'Yage' } ]);<br/>
          * @params {String} table Table name
-         * @params {Object} data Record data
-         * @return {Int} New record autoincrement ID (starting from 1)
+         * @params {Object} or {Array of Objects} data Record(s) data
+         * @return {Int} or {Array of Ints} New record(s) autoincrement ID(s) (starting from 1)
          */
 
         this.insert = function(table, data) {
 
-            var ls = this.ls, table_props = this.dbname + '_' + table;
+            var ls = this.ls, table_props = this.dbname + '_' + table, rec = '', ids = [], id = 0;
 
-            var id = data.id || parseInt(ls[ table_props + '_id']) || 1;
+            if (!data[0]) 
+                data = [ data ];
 
-            var rec = table_props + '_' + id;
-
-            if (data[0]) {
-                for (var i=0,ii=data.length; i<ii; i++) {
-                    ls[rec + '_' + data[i].name] = data[i].value;    
+            for (var i=0,ii=data.length; i<ii; i++) {
+                id = data[i].id || parseInt(ls[ table_props + '_id']) || 1;
+                for (var field in data[i]) {
+                    rec = table_props + '_' + id;
+                    ls[rec + '_' + field] = data[i][field];    
                 }
-            }
-            else {
-                for (var field in data) {
-                    ls[rec + '_' + field] = data[field];    
-                }
+                ls[rec + '_id'] = id;
+                ls[table_props + '_id'] = id + 1;
+                ids.push(id);
             }
 
-            ls[rec + '_id'] = id;
-
-            ls[table_props + '_id'] = id + 1;
-
-            return id;
+            if (ids.length == 1)
+                return ids[0];
+            else
+                return ids;
 
         }
 
@@ -124,7 +125,8 @@ function lsdb(config) {
                         if (reg && reg[1] && reg[2]) {
                             var id = parseInt(reg[1]);
                             var field = reg[2];
-                            var res = callback(id, field, ls[k]);
+                            var value = (field == 'id')? parseInt(ls[k]): ls[k];
+                            var res = callback(id, field, value);
                             if (res) {
                                 ids.push(id);
                                 ls[k] = res;
@@ -223,7 +225,16 @@ function lsdb(config) {
 
         }
 
-        this.update = function(table, dataObj, id) {
+        /**
+         * Update record(s) with the new values<br/>
+         * @params {String} table Table name
+         * @params {Mixed} reduce Reduce callback function. If passed ID or array of IDs instead of the callback, <br/>
+         * function will return records with matched IDs
+         * @params {Object} dataObj Object containing new fields
+         * @return {Int} or {Array of Ints} Updated record(s) ID(s) 
+         */
+
+        this.update = function(table, dataObj, reduce) {
         
             function dehydrate(object) {              
                 var key = 'id';
@@ -240,19 +251,26 @@ function lsdb(config) {
                     return object;
             }
 
-            var ls = this.ls, table_props = this.dbname + '_' + table;
+            var ls = this.ls, table_props = this.dbname + '_' + table, utils = this.utils, ids = [];
 
-            var rec = table_props + '_' + id;
-            
-            var el = this.select(table, id);
+            var els = this.select(table, reduce, 'array');
 
-            var updated = this.objMerge(el, dataObj);
+            for (var i=0,ii=els.length; i<ii; i++) {
+                var id = els[i].id, 
+                    rec = table_props + '_' + id,
+                    updated = utils.objMerge(els[i], dataObj);
 
-            for (var field in updated) {
-                ls[rec + '_' + field] = dehydrate(updated[field]);
+                for (var field in updated) {
+                    ls[rec + '_' + field] = dehydrate(updated[field]);
+                }
+
+                ids.push[id];
             }
 
-            return id;
+            if (ids.length == 1)
+                return ids[0];
+            else
+                return ids;
 
         }
 
@@ -316,42 +334,61 @@ function lsdb(config) {
             return true;
         }
 
+        /**
+         * Saves one or several record(s)<br/>
+         * @params {Model} model Model name (from the ORM config, see {link orm_init})
+         * @params {Object} or {Array of Objects} data Record(s) data
+         * @return {Int} or {Array of Ints} New record(s) ID(s) 
+         */
+
         this.orm_save = function(model, data) {
 
-            var params = { table: model.table, model: model, data: data };
-            var db = this, conf = db.conf_orm, models = conf.models;
+            var table = model.table,
+                        params = { table: model.table, model: model, data: data },
+                        db = this, conf = db.conf_orm, models = conf.models, ids = [];
 
-            if (params.data) {
-                dataObj = {};
-                var fields = params.model.fields.concat(['fid']);
+            if (data) {
 
-                if (params.model.associations) {
-                    for (var k=0,kk=params.model.associations.length; k<kk; k++) {
-                        var assoc = params.model.associations[k];
-                            fields.push(assoc.name);
+                if (!data[0])
+                    data = [ data ];
+
+                for (var i=0,ii=data.length; i<ii; i++) {
+
+                    var dataObj = {};
+                    var fields = model.fields.concat(['fid']);
+
+                    if (model.associations) {
+                        for (var k=0,kk=model.associations.length; k<kk; k++) {
+                            var assoc = model.associations[k];
+                                fields.push(assoc.name);
+                        }
                     }
+
+                    for (var field in fields) {
+                        if (data[i][fields[field]]) {
+                            dataObj[fields[field]] = data[i][fields[field]];
+                        }
+                    }
+
+                    if (dataObj.id) {
+                        var id = db.update(table, dataObj, dataObj.id);
+                    }
+                    else if (dataObj.fid) {
+                        dataObj.id = dataObj.fid;
+                        var id = db.insert(table, dataObj);
+                    }
+                    else {
+                        var id = db.insert(table, dataObj);
+                    }
+
+                    ids.push(parseInt(id));
+
                 }
 
-                for (var field in fields) {
-                    if (params.data[fields[field]]) {
-                        dataObj[fields[field]] = params.data[fields[field]];
-                    }
-                }
 
             }
 
-            if (dataObj.id) {
-                var id = db.update(params.table, dataObj, dataObj.id);
-            }
-            else if (dataObj.fid) {
-                dataObj.id = dataObj.fid;
-                var id = db.insert(params.table, dataObj);
-            }
-            else {
-                var id = db.insert(params.table, dataObj);
-            }
-
-            return db.select(params.table, id);
+            return (ids.length == 1)? ids[0]: ids;
 
         }
 
