@@ -601,7 +601,7 @@ function lsdb(config) {
         }
 
         /**
-         * Sort associative array (key-value object) by the keys
+         * Sort associative array (key-value object) by its keys
          * @param {Object} obj Object
          * @return {Object} result 
          */
