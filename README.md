@@ -1,30 +1,29 @@
-
 # lsdb.js
 Lightweight database and ORM layer for the LocalStorage-enabled browsers
 
 ## Quick start
 
-1. Download and include lsdb.js to your app
+Download and include lsdb.js to your app
 
     <script type="text/javascript" src="[yourpath]/lsdb.js"></script>
 
-2. Create new connection
+Create new connection
 
     var db = new dbb({ dbname: 'db_demo' });
 
-3. Insert record:
+Insert record:
 
     db.insert('users', { name: 'Engelbert', lastname: 'Humperdinck' });
 
-4. Select record:
+Select record:
 
     db.select('users'); 
 
-5. Update record:
+Update record:
 
     db.update('users', { name: 'Zingelbert', lastname: 'Bembledack' }, 1); 
 
-6. Drop table:
+Drop table:
 
     db.drop('users'); 
 
