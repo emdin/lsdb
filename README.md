@@ -4,26 +4,35 @@ Lightweight database and ORM layer for the LocalStorage-enabled browsers
 
 ## Quick start
 
-1. Include lsdb.js to your app
+1. Download and include lsdb.js to your app
+
+    <script type="text/javascript" src="[yourpath]lsdb.js"></script>
+
 2. Create new connection
 
     var db = new dbb({ dbname: 'db_demo' });
 
 3. Insert record:
+
     db.insert('users', { name: 'Engelbert', lastname: 'Humperdinck' });
+
 4. Select record:
+
     db.select('users'); 
-    =>
+
 5. Update record:
+
     db.update('users', { name: 'Zingelbert', lastname: 'Bembledack' }, 1); 
+
 6. Drop table:
+
     db.drop('users'); 
 
 ## Why?
 
-I found it most useful for the rich prototypes. On prototyping stage, all database interaction is done via 
+I used it mostly for the rich UI prototypes. On prototyping stage, all database interaction is done via 
 lsdb.js layer, which then can be easily replaced by the real ORM. But of course, you can build a real-world
-stateful client-side applications with it.
+stateful client-side applications with it as well.
 
 ## Reduce pattern
 
