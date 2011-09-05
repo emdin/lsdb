@@ -190,8 +190,9 @@ function lsdb(config) {
 
             var els = this.select_all(table), res = {};
 
-            if (!reduce)
+            if (!reduce) {
                 res = els;
+            }
             else {
                 if (reduce && (typeof reduce=='string' || typeof reduce=='number')) { /* if reduce == id */
                     var reduce_id = parseInt(reduce);
@@ -201,11 +202,11 @@ function lsdb(config) {
                     var reduce_ids = reduce;
                     reduce = function(rec) { if (utils.inArray(reduce_ids, rec.id)) return true; else return false; }
                 }
-            }
 
-            for (var id in els) {
-                if (reduce(els[id])) {
-                    res[id] = els[id];
+                for (var id in els) {
+                    if (reduce(els[id])) {
+                        res[id] = els[id];
+                    }
                 }
             }
 
@@ -287,7 +288,7 @@ function lsdb(config) {
 
         this.remove = function(table, reduce) {
             var ls = this.ls, table_props = this.dbname + '_' + table, utils = this.utils;
-            var recs = db.select(table, reduce, 'object');
+            var recs = this.select(table, reduce, 'object');
             var ids = utils.map(utils.getKeys(recs), function(id) { return table_props + '_' + id; });
             var keys_to_remove = [];
             for (var i=0,ii=ls.length; i<ii; i++) {
@@ -343,9 +344,13 @@ function lsdb(config) {
 
         this.orm_save = function(model, data) {
 
-            var table = model.table,
-                        params = { table: model.table, model: model, data: data },
-                        db = this, conf = db.conf_orm, models = conf.models, ids = [];
+            var db = this, 
+                     conf = db.conf_orm, 
+                     model = conf.models[model] || model,
+                     params = { table: model.table, model: model, data: data },
+                     models = conf.models, 
+                     table = model.table
+                     ids = [];
 
             if (data) {
 
@@ -408,7 +413,12 @@ function lsdb(config) {
 
         this.orm_load = function(model, reduce, mode, _nesting_table) {
 
-            var table = model.table, db = this, utils = this.utils, conf = db.conf_orm, models = conf.models;
+            var db = this
+                conf = db.conf_orm, 
+                models = conf.models,
+                model = models[model] || model,
+                table = model.table, 
+                utils = this.utils; 
 
             var data = db.select(table, reduce, 'object');
 
@@ -530,10 +540,29 @@ function lsdb(config) {
 
         }
 
-        this.orm_remove = function(record) {
-            var db = this;
-            if (record.model && record.id > 0) {
-                db.remove(record.model.table, record.id);
+        /**
+         * Removes model instance(s), filtered by reduce callback<br/>
+         * Reduce callback will be called for the each record with record as parameter <br/>
+         * If callback returns true, record will be removed <br/>
+         * Example: db.orm_remove('User', 3); // will remove User with ID=3 <br/>
+         * db.orm_remove('User', function(rec) { if (rec.age > 17) return true }); // will remove all Users whose age is higher than 17 <br/>
+         * @params {Model} model Model name (from the ORM config, see {link orm_init})
+         * @params {Mixed} reduce Reduce callback function. If passed ID or array of IDs instead of the callback, <br/>
+         * function will remove records with matched IDs
+         * @return void
+         */
+
+        this.orm_remove = function(model, reduce) {
+
+            var db = this
+                conf = db.conf_orm, 
+                models = conf.models,
+                model = models[model] || model,
+                table = model.table, 
+                utils = this.utils; 
+
+            if (table!='') {
+                db.remove(table, reduce);
             }
                 
         }
@@ -691,5 +720,4 @@ function lsdb(config) {
         };
 
 };
-
 

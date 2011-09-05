@@ -212,3 +212,7 @@ All associated recors will also be retrieved.
 or
 
     db.orm_remove( 'User', function(rec) { return rec.lastname=='Noire' } );
+
+## Platforms 
+
+Tested on Chrome and Firefox. Wait, are there any other browsers?
