@@ -150,7 +150,7 @@ function lsdb(config) {
 
         this.select_all = function(table, mode) {
 
-            var db = this, els = {};
+            var db = this, els = {}, utils = this.utils;
             var cb = function(id, field, value) {
                 if (!els[id])
                     els[id] = {};
@@ -158,6 +158,7 @@ function lsdb(config) {
             }
 
             db.table_each( table, cb );
+            els = utils.obj_sort_by_key(els);
 
             if (mode == 'array' || mode == 'as_array') {
                 var res_array = [];
@@ -421,7 +422,6 @@ function lsdb(config) {
                 utils = this.utils; 
 
             var data = db.select(table, reduce, 'object');
-
             if (!_nesting_table)
                 _nesting_table = {};
 
@@ -601,6 +601,20 @@ function lsdb(config) {
         }
 
         /**
+         * Sort associative array (key-value object) by the keys
+         * @param {Object} obj Object
+         * @return {Object} result 
+         */
+
+        this.utils.obj_sort_by_key = function(obj) {
+           var keys = this.getKeys(obj).sort(), result = {};
+           for (var i=0,ii=keys.length; i<ii; i++) {
+               result[keys[i]] = obj[keys[i]];
+           }
+           return result;
+        }
+
+        /**
          * Simple merge of two objects 
          * @return {Object} Merged object
          */
@@ -720,4 +734,5 @@ function lsdb(config) {
         };
 
 };
+
 
