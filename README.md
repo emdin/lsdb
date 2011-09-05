@@ -6,7 +6,7 @@ Lightweight database and ORM layer for the LocalStorage-enabled browsers
 
 1. Download and include lsdb.js to your app
 
-    <script type="text/javascript" src="[yourpath]lsdb.js"></script>
+    <script type="text/javascript" src="[yourpath]/lsdb.js"></script>
 
 2. Create new connection
 
