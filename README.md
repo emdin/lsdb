@@ -58,7 +58,7 @@ Updating only Engelberts
 
 ### Insert single record
 
-    db.insert = function( 'users', { name: 'Engelbert', lastname: 'Humperdinck' } );
+    db.insert( 'users', { name: 'Engelbert', lastname: 'Humperdinck' } );
 
 ### Insert several records
 
