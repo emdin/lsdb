@@ -1,5 +1,5 @@
 # LSDB.js
-Lightweight database and ORM layer for the LocalStorage-enabled browsers
+Lightweight database and ORM layer for the LocalStorage-enabled browser(s)
 
 ## Quick start
 
